@@ -1,5 +1,8 @@
 package version2;
-
+/*
+*Aqui se guardan todas la funciones que utilizan sentencias sql
+*se guarda la transaccion y se actualiza el saldo de cada cliente
+*/
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,28 +13,34 @@ import javax.swing.JOptionPane;
 public class Operaciones {
     Conector con;
     Voraz voraz;
-    Transac tr; //necesita los parametros
+    Transac tr; //necesita los parametros?
 
     public Operaciones() {
         con = new Conector();
         voraz = new Voraz();
     }
     
+    //===OPERACIONES PRINCIPALES===
     public void depositar(){
         int nroCta, monto,saldo;
         String tipo="deposito";
-        con.conectar(); //abre conexion
         ResultSet result;
+        
+        con.conectar(); //abre conexion
+        
         nroCta=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese Nro de Cta: "));
         try{
             PreparedStatement st = con.conexion.prepareStatement("select * from cuenta where idcuenta="+nroCta+"");
-            result = st.executeQuery();
+            result = st.executeQuery(); //ejecutamos la consulta y obtenemos el resultado
+            
             if(result.getInt("idcuenta")==nroCta){
-                monto=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese Monto: "));
-                agregarTransac(monto,nroCta,tipo); //guarda transaccion
-                //saldo=result.getInt("saldo");
-                //actualizarD(monto,nroCta,saldo); //actualizar saldo
-                voraz.vueltoD(monto); //imprime el cambio
+                monto=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese el Monto: "));
+                saldo=result.getInt("saldo"); //obtiene el saldo de la tabla "cuenta"
+                
+                guardar_Transaccion(monto,nroCta,tipo); //guarda la transaccion en la tabla "transaccion"
+                actualizar_Deposito(monto,nroCta,saldo); //actualiza el saldo de la tabla "cuenta"
+                voraz.vuelto(monto); //devuelve el cambio
+                
                 con.cerrar(); //cierra conexion
             }
         }
@@ -43,18 +52,23 @@ public class Operaciones {
     public void retirar(){
         int nroCta, monto,saldo;
         String tipo="retiro";
-        con.conectar(); //abre conexion
         ResultSet result;
+        
+        con.conectar(); //abre conexion
+        
         nroCta=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese Nro de Cta: "));
         try{
             PreparedStatement st = con.conexion.prepareStatement("select * from cuenta where idcuenta="+nroCta+"");
-            result = st.executeQuery();
+            result = st.executeQuery(); //ejecutamos la consulta y obtenemos el resultado
+            
             if(result.getInt("idcuenta")==nroCta){
                 monto=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese Monto: "));
-                agregarTransac(monto,nroCta,tipo); //guarda transaccion
-                saldo=result.getInt("saldo");
-                actualizarR(monto,nroCta,saldo); //actualizar saldo
-                voraz.vueltoR(monto); //imprime el cambio
+                saldo=result.getInt("saldo"); //obtiene el saldo de la tabla "cuenta"
+                
+                guardar_Transaccion(monto,nroCta,tipo); //guarda la transaccion en la tabla "transaccion"
+                actualizar_Retiro(monto,nroCta,saldo); //actualiza el saldo de la tabla "cuenta"
+                voraz.vuelto(monto); //devuelve el cambio
+                
                 con.cerrar(); //cierra conexion
             }
         }
@@ -65,14 +79,18 @@ public class Operaciones {
     
     public void infoSaldo(){
         int nroCta;
-        con.conectar(); //abre conexion
         ResultSet result;
+        
+        con.conectar(); //abre conexion
+        
         nroCta=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese Nro de Cta: "));
         try{
             PreparedStatement st = con.conexion.prepareStatement("select * from cuenta where idcuenta="+nroCta+"");
-            result = st.executeQuery();
+            result = st.executeQuery(); //ejecutamos la consulta y obtenemos el resultado
+            
             if(result.getInt("idcuenta")==nroCta){
                 System.out.println("Su saldo es de: "+result.getInt("saldo") +" "+ result.getString("divisa"));
+                
                 con.cerrar(); //cierra conexion
             }
         }
@@ -82,63 +100,71 @@ public class Operaciones {
     }
     
     //===OPERACIONES SECUNDARIAS===
-    public void agregarTransac(int monto, int nroCta, String tipo){
+    public void guardar_Transaccion(int monto, int nroCta, String tipo){
         String fecha=getFecha();
         int nrotransac=getNroTransac();
-        Transac trans;
-        
-        trans = new Transac(nrotransac,nroCta,tipo,monto,fecha);
         
         try {
             String sql="insert into transaccion (idtransac, idcuenta, tipo, monto, fecha) values (?,?,?,?,?)";
             PreparedStatement st = con.conexion.prepareStatement(sql);
-            st.setInt(1, trans.getidTransac());
-            st.setInt(2, trans.getidCuenta());
-            st.setString(3, trans.gettipo());
-            st.setInt(4, trans.getmonto());
-            st.setString(5, trans.getfecha());
-            st.execute();
+            
+            st.setInt(1, nrotransac);
+            st.setInt(2, nroCta);
+            st.setString(3, tipo);
+            st.setInt(4, monto);
+            st.setString(5, fecha);
+            st.execute(); //ejecutar consulta
+            
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
     }
     
-    public void actualizarR(int monto, int nroCta, int saldo){
+    public void actualizar_Retiro(int monto, int nroCta, int saldo){
         int actual=saldo-monto;
         try {
             String sql="update cuenta set saldo= ? where idcuenta= ?";
             PreparedStatement st = con.conexion.prepareStatement(sql);
+            
             st.setInt(1, actual);
             st.setInt(2, nroCta);
-            st.executeUpdate();
+            st.executeUpdate(); //ejecutar consulta
+            
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
     }
     
-    public void actualizarD(int monto, int nroCta, int saldo){
+    public void actualizar_Deposito(int monto, int nroCta, int saldo){
         int actual=saldo+monto;
+        
         try {
             String sql="update cuenta set saldo="+actual+" where idcuenta="+nroCta+"";
             PreparedStatement st = con.conexion.prepareStatement(sql);
-            st.executeUpdate();
+            
+            st.executeUpdate(); //ejecutar consulta
+            
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
     }
     
-    public String getFecha(){
+    public String getFecha(){ //obtiene la fecha del sistema
         Calendar fecha = new GregorianCalendar();
-        String fecha1;
+        String formato;
+        
         int año = fecha.get(Calendar.YEAR);
         int mes = fecha.get(Calendar.MONTH);
         int dia = fecha.get(Calendar.DAY_OF_MONTH);
-        fecha1= dia + "/" + (mes+1) + "/" + año;
-        return fecha1;
+        
+        formato= dia + "/" + (mes+1) + "/" + año; //formato DD/MM/AAAA
+        
+        return formato;
     }
     
-    public int getNroTransac(){
-        int clave = (int) (Math.random()*2000+1000);
+    public int getNroTransac(){ //genera un codigo de la transaccion
+        int clave = (int) (Math.random()*2000+1000); //numero aleatorio de 4 cifras
+        
         return clave;
     }
 }
