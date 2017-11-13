@@ -12,7 +12,7 @@ public class Conector{
     Connection conexion;
     String ruta;
 
-    public void conectar(){
+    public void conectar(){ //abrir la conexion
         try{
             ruta = "caja_piura.db"; //dentro del mismo proyecto
             conexion = DriverManager.getConnection("jdbc:sqlite:" +ruta);

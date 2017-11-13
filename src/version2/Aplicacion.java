@@ -12,7 +12,7 @@ public class Aplicacion {
     }
     
     public void menu(){ //muestra un mensaje con las opciones
-        int opc= Integer.parseInt(JOptionPane.showInputDialog(null, "MENU\n"
+        int opc = Integer.parseInt(JOptionPane.showInputDialog(null, "MENU\n"
             + "1: Deposito\n"
             + "2: Retiro\n"
             + "3: Informacion de saldo\n"
@@ -22,7 +22,7 @@ public class Aplicacion {
     }
     
     public void opciones(int opc){ //llama a los metodos principales
-        Operaciones op=new Operaciones(); //instancio la clase operaciones
+        Operaciones op = new Operaciones(); //instancio la clase operaciones
         
         try {
             switch(opc){

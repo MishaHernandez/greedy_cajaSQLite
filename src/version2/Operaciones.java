@@ -23,24 +23,28 @@ public class Operaciones {
     //===OPERACIONES PRINCIPALES===
     public void depositar(){
         int nroCta, monto,saldo;
-        String tipo="deposito";
+        String tipo = "deposito";
         ResultSet result;
         
         con.conectar(); //abre conexion
         
         nroCta=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese Nro de Cta: "));
         try{
-            PreparedStatement st = con.conexion.prepareStatement("select * from cuenta where idcuenta="+nroCta+"");
+            PreparedStatement st = con.conexion.prepareStatement("select * from cuenta where idcuenta = "+nroCta+"");
             result = st.executeQuery(); //ejecutamos la consulta y obtenemos el resultado
             
-            if(result.getInt("idcuenta")==nroCta){
+            if(result.getInt("idcuenta") == nroCta){
                 monto=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese el Monto: "));
                 saldo=result.getInt("saldo"); //obtiene el saldo de la tabla "cuenta"
                 
                 guardar_Transaccion(monto,nroCta,tipo); //guarda la transaccion en la tabla "transaccion"
                 actualizar_Deposito(monto,nroCta,saldo); //actualiza el saldo de la tabla "cuenta"
-                voraz.vuelto(monto); //devuelve el cambio
                 
+                System.out.println("Se ha depositado: "+monto);
+                System.out.println(" ");
+                
+                voraz.vuelto(monto); //devuelve el cambio
+
                 con.cerrar(); //cierra conexion
             }
         }
@@ -51,22 +55,26 @@ public class Operaciones {
     
     public void retirar(){
         int nroCta, monto,saldo;
-        String tipo="retiro";
+        String tipo = "retiro";
         ResultSet result;
         
         con.conectar(); //abre conexion
         
         nroCta=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese Nro de Cta: "));
         try{
-            PreparedStatement st = con.conexion.prepareStatement("select * from cuenta where idcuenta="+nroCta+"");
+            PreparedStatement st = con.conexion.prepareStatement("select * from cuenta where idcuenta = "+nroCta+"");
             result = st.executeQuery(); //ejecutamos la consulta y obtenemos el resultado
             
-            if(result.getInt("idcuenta")==nroCta){
+            if(result.getInt("idcuenta") == nroCta){
                 monto=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese Monto: "));
                 saldo=result.getInt("saldo"); //obtiene el saldo de la tabla "cuenta"
                 
                 guardar_Transaccion(monto,nroCta,tipo); //guarda la transaccion en la tabla "transaccion"
                 actualizar_Retiro(monto,nroCta,saldo); //actualiza el saldo de la tabla "cuenta"
+                
+                System.out.println("Se ha retirado: "+monto);
+                System.out.println(" ");
+                
                 voraz.vuelto(monto); //devuelve el cambio
                 
                 con.cerrar(); //cierra conexion
@@ -85,10 +93,10 @@ public class Operaciones {
         
         nroCta=Integer.parseInt(JOptionPane.showInputDialog(null, "ingrese Nro de Cta: "));
         try{
-            PreparedStatement st = con.conexion.prepareStatement("select * from cuenta where idcuenta="+nroCta+"");
+            PreparedStatement st = con.conexion.prepareStatement("select * from cuenta where idcuenta = "+nroCta+"");
             result = st.executeQuery(); //ejecutamos la consulta y obtenemos el resultado
             
-            if(result.getInt("idcuenta")==nroCta){
+            if(result.getInt("idcuenta") == nroCta){
                 System.out.println("Su saldo es de: "+result.getInt("saldo") +" "+ result.getString("divisa"));
                 
                 con.cerrar(); //cierra conexion
@@ -101,11 +109,11 @@ public class Operaciones {
     
     //===OPERACIONES SECUNDARIAS===
     public void guardar_Transaccion(int monto, int nroCta, String tipo){
-        String fecha=getFecha();
-        int nrotransac=getNroTransac();
+        String fecha = getFecha();
+        int nrotransac = getNroTransac();
+        String sql="insert into transaccion (idtransac, idcuenta, tipo, monto, fecha) values (?,?,?,?,?)";
         
         try {
-            String sql="insert into transaccion (idtransac, idcuenta, tipo, monto, fecha) values (?,?,?,?,?)";
             PreparedStatement st = con.conexion.prepareStatement(sql);
             
             st.setInt(1, nrotransac);
@@ -121,9 +129,10 @@ public class Operaciones {
     }
     
     public void actualizar_Retiro(int monto, int nroCta, int saldo){
-        int actual=saldo-monto;
+        int actual = saldo - monto; //restamos el valor retirado
+        String sql = "update cuenta set saldo = ? where idcuenta = ?";
+        
         try {
-            String sql="update cuenta set saldo= ? where idcuenta= ?";
             PreparedStatement st = con.conexion.prepareStatement(sql);
             
             st.setInt(1, actual);
@@ -136,10 +145,10 @@ public class Operaciones {
     }
     
     public void actualizar_Deposito(int monto, int nroCta, int saldo){
-        int actual=saldo+monto;
+        int actual = saldo + monto; //sumamos el valor depositado
+        String sql = "update cuenta set saldo = "+actual+" where idcuenta = "+nroCta+"";
         
         try {
-            String sql="update cuenta set saldo="+actual+" where idcuenta="+nroCta+"";
             PreparedStatement st = con.conexion.prepareStatement(sql);
             
             st.executeUpdate(); //ejecutar consulta
@@ -151,19 +160,19 @@ public class Operaciones {
     
     public String getFecha(){ //obtiene la fecha del sistema
         Calendar fecha = new GregorianCalendar();
-        String formato;
         
+        String formato;
         int año = fecha.get(Calendar.YEAR);
         int mes = fecha.get(Calendar.MONTH);
         int dia = fecha.get(Calendar.DAY_OF_MONTH);
         
-        formato= dia + "/" + (mes+1) + "/" + año; //formato DD/MM/AAAA
+        formato = dia + "/" + (mes+1) + "/" + año; //formato DD/MM/AAAA
         
         return formato;
     }
     
     public int getNroTransac(){ //genera un codigo de la transaccion
-        int clave = (int) (Math.random()*2000+1000); //numero aleatorio de 4 cifras
+        int clave = (int) (Math.random() * 2000 + 1000); //numero aleatorio de 4 cifras
         
         return clave;
     }
